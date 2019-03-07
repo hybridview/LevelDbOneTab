@@ -31,20 +31,7 @@ namespace ConsoleApp1
         unsafe public static extern byte* DbGet(out UInt32 bufferLen);
 
         [DllImport("MyLevelDb.dll", CallingConvention = CallingConvention.Cdecl)]
-        unsafe public static extern byte* DbSet(string data, out UInt32 bufferLen);
-
-        //[DllImport("MyLevelDb.dll", CallingConvention = CallingConvention.Cdecl)]
-        //unsafe public static extern byte* DbSet3(int bufferLen);
-
-
-        [DllImport("MyLevelDb.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool DbSaveBinary(string filename);
-
-        //[DllImport("MyLevelDb.dll", CallingConvention = CallingConvention.Cdecl)]
-        //public static extern string DbReadBinary(string filename);
-
-        // [DllImport("MyLevelDb.dll", CallingConvention = CallingConvention.Cdecl)]
-        //public static extern bool ApplyChangesToDb(string key, string data);
 
         [DllImport("MyLevelDb.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool ApplyChangesToDb(string key, string data, UInt32 length);
@@ -56,9 +43,9 @@ namespace ConsoleApp1
             
             //Console.WriteLine("GetCommandLineArgs: {0}", String.Join(", ", arguments));
 
-            // LevelDbOneTab.exe -leveldbfolderpath "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\Default\Local Storage\leveldb" -action export -archivefolderpath "B:/OneNoteBackups/backups" -archiveprevious
+            // LevelDbOneTab.exe -leveldbfolderpath "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\Default\Local Storage\leveldb" -action export -archivefolderpath "B:/OneTabBackups/backups" -archiveprevious
 
-            // LevelDbOneTab.exe -leveldbfolderpath "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\Default\Local Storage\leveldb" -action import -archivefolderpath "B:/OneNoteBackups/backups" -archiveprevious 
+            // LevelDbOneTab.exe -leveldbfolderpath "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\Default\Local Storage\leveldb" -action import -archivefolderpath "B:/OneTabBackups/backups" -archiveprevious 
 
             try
             {
@@ -88,6 +75,11 @@ namespace ConsoleApp1
                             break;
                         case "-archiveprevious":
                             archivePreviousExport = true;
+                            break;
+                        case "-help":
+                            Console.WriteLine("EXAMPLE EXPORT: \r\n\tLevelDbOneTab.exe -leveldbfolderpath \"C:\\Users\\<USER>\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Local Storage\\leveldb\" -action export -archivefolderpath \"B:/OneTabBackups/backups\" -archiveprevious");
+                            Console.WriteLine("\r\nEXAMPLE IMPORT: \r\n\tLevelDbOneTab.exe -leveldbfolderpath \"C:\\Users\\<USER>\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Local Storage\\leveldb\" -action import -archivefolderpath \"B:/OneTabBackups/backups\"\r\n\r\n");
+
                             break;
                     }
                 }
@@ -205,22 +197,21 @@ namespace ConsoleApp1
         static void ArchiveExistingExport(string targetPath) {
             Console.WriteLine("Archiving existing export data...");
             try {
-            if (!Directory.Exists(targetPath)) {
-                throw new Exception("Export folder does not exist.");
-
-            }
+                if (!Directory.Exists(targetPath)) {
+                    throw new Exception("Export folder does not exist.");
+                }
 
                 var files = Directory.GetFiles(targetPath,"*.bin");
 
+                if (files.Length > 0) {
+                    string fn = System.IO.Path.Combine(targetPath,string.Format("OneTab-Archive-{0:yyyy-MM-dd_hh-mm}.zip", DateTime.Now));
 
-                string fn = System.IO.Path.Combine(targetPath,string.Format("OneTab-Archive-{0:yyyy-MM-dd_hh-mm}.zip", DateTime.Now));
+                    ZipFileCreator.CreateZipFile(fn, files);
 
-                ZipFileCreator.CreateZipFile(fn, files);
-
-                foreach (var item in files)
-                    if (File.Exists(item))
-                        File.Delete(item);
-            
+                    foreach (var item in files)
+                        if (File.Exists(item))
+                            File.Delete(item);
+                }
             } catch (Exception ex) {
                 Console.WriteLine("Error archiving existing export data: " + ex.Message);
 
