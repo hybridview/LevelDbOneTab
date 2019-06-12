@@ -12,6 +12,26 @@ using Newtonsoft.Json;
 namespace ConsoleApp1
 {
 
+    /**
+     * IMPORTANT:
+     * Target machine must have necessary C++ redist files for this to run. If not, you will get error "unable to load MyLevelDB.dll".
+     *
+     * QUICK FIX:
+     * I copied all of the dll files from the location below into the BIN folder of my compiled LevelDBOneTab app. It then worked as
+     * expected. In your case, I think you would use the path of the version of Visual Studio that you used to build the app. In my
+     * case, I built using VS 2019, so took the redist files from that path. NOTE: I think these "debug_nonredist" files are for when
+     * you build in Debug mode. Might need redist files from x86 folder if in release mode, but not confirmed.
+    * 
+    * C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Redist\MSVC\14.21.27702\debug_nonredist\x86\Microsoft.VC142.DebugCRT
+     *
+     *
+     * In future, setup project should be created to distribute the right files:
+     * https://docs.microsoft.com/en-us/cpp/windows/walkthrough-deploying-a-visual-cpp-application-by-using-a-setup-project?view=vs-2019
+     *
+     *
+     *
+     */
+
     class Program
     {
 
@@ -87,11 +107,11 @@ namespace ConsoleApp1
                 // Args validation.
                 if (string.IsNullOrEmpty(levelDbFolderPath))
                 {
-                    throw new Exception("Please specify -leveldbfolderpath. Please set path to chrome or vivaldi leveldb folder. It will look like \"C:/Users/<YourUserName>/AppData/Local/Google/Chrome/User Data/Default/Local Storage/leveldb/\"");
+                    throw new Exception("Please specify -leveldbfolderpath. Please set path to chrome or vivaldi leveldb folder. It will look like \"C:/Users/<YourUserName>/AppData/Local/Google/Chrome/User Data/Default/Local Storage/leveldb/\", or may be slightly different if running a BETA version.");
                 }
                 else if (!Directory.Exists(levelDbFolderPath))
                 {
-                    throw new Exception("Specified -leveldbfolderpath \"" + levelDbFolderPath + "\" cannot be found.");
+                    throw new Exception("Specified -leveldbfolderpath \"" + levelDbFolderPath + "\" cannot be found. Please set path to chrome or vivaldi leveldb folder. It should look like \"C:/Users/<YourUserName>/AppData/Local/Google/Chrome/User Data/Default/Local Storage/leveldb/\", or may be slightly different if running a BETA version.");
                 }
                 if (string.IsNullOrEmpty(action) || (action != "import" && action != "export"))
                 {
@@ -233,7 +253,7 @@ namespace ConsoleApp1
                         {
                             if (!File.Exists(p))
                             {
-                                Console.WriteLine("Could not find file " + p + ". Skipping import of that key.");
+                                Console.WriteLine("Could not find file " + p + " for key " + keys[i] + ". Please make sure it exists. Skipping import of that key.");
                             }
                             else
                             {
@@ -303,16 +323,17 @@ namespace ConsoleApp1
                         String p = System.IO.Path.Combine(folderPath, add + ".bin");
 
 
-                        // PROBLEMS:
+                        // CURRENT PROBLEMS:
                         // After import, Last char is missing, and 4 bytes with val 253 are added.
                         
                         // First export, good.
                         // First import of good data file: OneTab works.
                         // Export again to data file: 4 weird y chars added.
                         // Import again: good
-                        // Export again: 8 wierd chars total at end (????yyyy)
+                        // Export again: 8 weird chars total at end (????yyyy): Exporter cannot output formatted JSON because of this.
                         // Import again: good
 
+                        // Below did not fix odd issue above...
                         /*
                         byte xxx = data[data.Length-1];
                         Console.WriteLine(" byte " + char.ConvertFromUtf32( xxx));
@@ -332,7 +353,7 @@ namespace ConsoleApp1
 
                         DbSaveBinary(p);
 
-                        // Save data as formated json 
+                        // Save data as formatted json for easy human reading.
                         if (mode)
                         {
                             p = System.IO.Path.Combine(folderPath, add + ".json");
@@ -342,7 +363,7 @@ namespace ConsoleApp1
                             try {
                                 File.WriteAllText(p, JToken.Parse(s).ToString(Formatting.Indented));
                             } catch (Exception ex) {
-                                Console.WriteLine("WARNING: Could not format output data as JSON. Writing as raw string instead: " + ex.Message);
+                                Console.WriteLine("WARNING: Could not format output data as JSON. Writing as raw string to the json file instead: " + ex.Message);
                                 File.WriteAllText(p,s);
                             }
                         }
